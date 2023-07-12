@@ -1307,7 +1307,6 @@ func (c *client) allocFD(ino uint64, flags, mode uint32, fileCache bool, fileSiz
 			FileSize:        fileSize,
 			CacheThreshold:  c.cacheThreshold,
 		}
-		f.fileWriter.FreeCache()
 		switch flags & 0xff {
 		case syscall.O_RDONLY:
 			f.fileReader = blobstore.NewReader(clientConf)

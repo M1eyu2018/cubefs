@@ -58,6 +58,7 @@ type Writer struct {
 	wConcurrency int
 	wg           sync.WaitGroup
 	once         sync.Once
+	bufOnce      sync.Once
 	sync.RWMutex
 	enableBcache   bool
 	cacheAction    int
@@ -622,7 +623,7 @@ func (writer *Writer) FreeCache() {
 	if buf.CachePool == nil {
 		return
 	}
-	writer.once.Do(func() {
+	writer.bufOnce.Do(func() {
 		tmpBuf := writer.buf
 		writer.buf = nil
 		if tmpBuf != nil {
