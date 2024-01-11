@@ -21,6 +21,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"strconv"
 	"strings"
 )
 
@@ -151,6 +152,27 @@ func (c *Config) GetInt64(key string) int64 {
 			return 0
 		}
 		return number
+	}
+	return 0
+}
+
+// GetBool returns a int64 value for the config key.
+func (c *Config) GetInt64v2(key string) int64 {
+	x, present := c.data[key]
+	if !present {
+		return 0
+	}
+	if result, isInt := x.(int64); isInt {
+		return result
+	}
+	if result, isFloat := x.(float64); isFloat {
+		return int64(result)
+	}
+	if result, isString := x.(string); isString {
+		r, err := strconv.ParseInt(result, 10, 64)
+		if err == nil {
+			return r
+		}
 	}
 	return 0
 }

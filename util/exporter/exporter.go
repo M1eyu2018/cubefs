@@ -82,7 +82,7 @@ func Init(role string, cfg *config.Config) {
 	EnablePid = cfg.GetBoolWithDefault(ConfigKeyEnablePid, false)
 	log.LogInfo("enable report partition id info? ", EnablePid)
 
-	port := cfg.GetInt64(ConfigKeyExporterPort)
+	port := cfg.GetInt64v2(ConfigKeyExporterPort)
 
 	if port < 0 {
 		log.LogInfof("%v exporter port set random default", port)
