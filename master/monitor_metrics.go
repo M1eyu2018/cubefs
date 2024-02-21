@@ -25,7 +25,7 @@ import (
 	"github.com/cubefs/cubefs/util/log"
 )
 
-//metrics
+// metrics
 const (
 	StatPeriod                 = time.Minute * time.Duration(1)
 	MetricDataNodesUsedGB      = "dataNodes_used_GB"
@@ -54,6 +54,7 @@ const (
 	MetricMasterNoLeader       = "master_no_leader"
 	MetricMasterNoCache        = "master_no_cache"
 	MetricMasterSnapshot       = "master_snapshot"
+	MetricMasterLeader         = "master_leader"
 
 	MetricMissingDp                = "missing_dp"
 	MetricDpNoLeader               = "dp_no_leader"
@@ -103,6 +104,7 @@ type monitorMetrics struct {
 	masterNoLeader           *exporter.Gauge
 	masterNoCache            *exporter.GaugeVec
 	masterSnapshot           *exporter.Gauge
+	masterLeader             *exporter.GaugeVec
 
 	volNames                      map[string]struct{}
 	badDisks                      map[string]string
@@ -211,7 +213,7 @@ func (m *warningMetrics) deleteMissingDp(missingDpAddrSet addrSet, clusterName, 
 	log.LogDebugf("action[deleteMissingDp] delete: dpId(%v), addr(%v)", dpId, addr)
 }
 
-//leader only
+// leader only
 func (m *warningMetrics) WarnMissingDp(clusterName, addr string, partitionID uint64, report bool) {
 	m.dpMissingReplicaMutex.Lock()
 	defer m.dpMissingReplicaMutex.Unlock()
@@ -231,7 +233,7 @@ func (m *warningMetrics) WarnMissingDp(clusterName, addr string, partitionID uin
 	m.dpMissingReplicaInfo[id][addr] = voidVal
 }
 
-//leader only
+// leader only
 func (m *warningMetrics) CleanObsoleteDpMissing(clusterName string, dp *DataPartition) {
 	m.dpMissingReplicaMutex.Lock()
 	defer m.dpMissingReplicaMutex.Unlock()
@@ -256,7 +258,7 @@ func (m *warningMetrics) CleanObsoleteDpMissing(clusterName string, dp *DataPart
 	}
 }
 
-//leader only
+// leader only
 func (m *warningMetrics) WarnDpNoLeader(clusterName string, partitionID uint64, report bool) {
 	if clusterName != m.cluster.Name {
 		return
@@ -303,7 +305,7 @@ func (m *warningMetrics) deleteMissingMp(missingMpAddrSet addrSet, clusterName, 
 	log.LogDebugf("action[deleteMissingMp] delete: mpId(%v), addr(%v)", mpId, addr)
 }
 
-//leader only
+// leader only
 func (m *warningMetrics) WarnMissingMp(clusterName, addr string, partitionID uint64, report bool) {
 	m.mpMissingReplicaMutex.Lock()
 	defer m.mpMissingReplicaMutex.Unlock()
@@ -324,7 +326,7 @@ func (m *warningMetrics) WarnMissingMp(clusterName, addr string, partitionID uin
 	m.mpMissingReplicaInfo[id][addr] = voidVal
 }
 
-//leader only
+// leader only
 func (m *warningMetrics) CleanObsoleteMpMissing(clusterName string, mp *MetaPartition) {
 	m.mpMissingReplicaMutex.Lock()
 	defer m.mpMissingReplicaMutex.Unlock()
@@ -346,7 +348,7 @@ func (m *warningMetrics) CleanObsoleteMpMissing(clusterName string, mp *MetaPart
 	}
 }
 
-//leader only
+// leader only
 func (m *warningMetrics) WarnMpNoLeader(clusterName string, partitionID uint64, report bool) {
 	if clusterName != m.cluster.Name {
 		return
@@ -410,6 +412,7 @@ func (mm *monitorMetrics) start() {
 	mm.masterSnapshot = exporter.NewGauge(MetricMasterSnapshot)
 	mm.masterNoLeader = exporter.NewGauge(MetricMasterNoLeader)
 	mm.masterNoCache = exporter.NewGaugeVec(MetricMasterNoCache, "", []string{"volName"})
+	mm.masterLeader = exporter.NewGaugeVec(MetricMasterLeader, "", []string{"isLeader"})
 	go mm.statMetrics()
 }
 
@@ -449,6 +452,7 @@ func (mm *monitorMetrics) doFollowerStat() {
 		mm.masterSnapshot.Set(0)
 	}
 	mm.setVolNoCacheMetrics()
+	mm.masterLeader.SetWithLabelValues(0, "false")
 }
 
 func (mm *monitorMetrics) doStat() {
@@ -473,6 +477,7 @@ func (mm *monitorMetrics) doStat() {
 	mm.setInactiveDataNodesCountMetric()
 	mm.setInactiveMetaNodesCountMetric()
 	mm.setMpAndDpMetrics()
+	mm.masterLeader.SetWithLabelValues(1, "true")
 }
 
 func (mm *monitorMetrics) setMpAndDpMetrics() {
@@ -827,6 +832,7 @@ func (mm *monitorMetrics) resetFollowerMetrics() {
 	mm.masterNoCache.GaugeVec.Reset()
 	mm.masterNoLeader.Set(0)
 	mm.masterSnapshot.Set(0)
+	mm.masterLeader.Reset()
 }
 
 func (mm *monitorMetrics) resetAllLeaderMetrics() {
@@ -854,4 +860,5 @@ func (mm *monitorMetrics) resetAllLeaderMetrics() {
 	mm.ReplicaMissingDPCount.Set(0)
 	mm.MpMissingLeaderCount.Set(0)
 	mm.DpMissingLeaderCount.Set(0)
+	mm.masterLeader.Reset()
 }
