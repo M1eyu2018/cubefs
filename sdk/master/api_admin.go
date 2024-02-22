@@ -406,7 +406,8 @@ func (api *AdminAPI) CreateDefaultVolume(volName, owner string) (err error) {
 	var request = newAPIRequest(http.MethodGet, proto.AdminCreateVol)
 	request.addParam("name", volName)
 	request.addParam("owner", owner)
-	request.addParam("capacity", "10")
+	request.addParam("capacity", "1000")
+	request.addParam("crossZone", "true")
 	if _, err = api.mc.serveRequest(request); err != nil {
 		return
 	}
